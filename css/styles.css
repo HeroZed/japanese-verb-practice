@@ -488,7 +488,7 @@ a { color: var(--red); }
 }
 .results-table tr:last-child td { border-bottom: none; }
 .row-ok { background: var(--green-bg); }
-.row-err { background: #fef9f9; }
+.row-err { background: var(--red-pale); }
 .correct-ans { color: var(--red); font-weight: 700; font-size: var(--fz-base); }
 
 .results-actions {

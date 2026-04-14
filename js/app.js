@@ -4,7 +4,7 @@
 const STATE = {
   view: 'home',          // home | practice-settings | practice | results | vocab
   settings: {
-    quizMode: 'conjugation',       // 'conjugation' | 'groupid'
+    quizMode: 'groupid',            // 'conjugation' | 'groupid'
     direction: 'plain-to-polite',  // plain-to-polite | polite-to-plain
     groups: [1, 2, 3],
     tenses: ['pres_pos'],          // default: 現在肯定 only
