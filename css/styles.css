@@ -42,6 +42,7 @@ body.theme-light {
   --green:      #27ae60;
   --green-bg:   #eafaf1;
   --shadow:     0 2px 12px rgba(0,0,0,0.08);
+  --th-bg:      #1a1a2e;
 }
 
 body.theme-dark {
@@ -57,6 +58,7 @@ body.theme-dark {
   --green:      #5aee90;
   --green-bg:   #0d1f16;
   --shadow:     0 2px 16px rgba(0,0,0,0.6);
+  --th-bg:      #252538;
 }
 
 /* Font sizes */
@@ -474,7 +476,7 @@ a { color: var(--red); }
   box-shadow: var(--shadow);
 }
 .results-table th {
-  background: var(--ink);
+  background: var(--th-bg);
   color: #fff;
   padding: 10px 12px;
   font-size: var(--fz-sm);
