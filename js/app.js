@@ -869,6 +869,8 @@ async function loadRankingInto(container) {
 }
 
 // ── Top Errors Section ────────────────────────────────────────
+const topErrorsExpanded = new Set();
+
 function renderTopErrorsSection() {
   return `<div class="top-errors-section">
     <div class="ranking-header">
@@ -880,24 +882,76 @@ function renderTopErrorsSection() {
   </div>`;
 }
 
+function renderTopErrorRows(container, rows) {
+  container.innerHTML = rows.map((r, i) => {
+    const id = r.kana + r.kanji;
+    const expanded = topErrorsExpanded.has(id);
+    const verb = VERB_LIST.find(v => v.kanji === r.kanji && v.kana === r.kana);
+
+    let expandContent = '';
+    if (expanded && verb) {
+      const conj = getConjugations(verb);
+      expandContent = `
+        <div class="vocab-expand">
+          <div class="expand-section">
+            <div class="expand-title">普通體</div>
+            ${PLAIN_FORMS.map(f => `
+              <div class="conj-row">
+                <span class="conj-label">${FORM_LABELS[f].zh}</span>
+                <span class="conj-form">${conj[f].kanji}</span>
+                <span class="conj-kana">${conj[f].kana}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="expand-section">
+            <div class="expand-title">禮貌體</div>
+            ${POLITE_FORMS.map(f => `
+              <div class="conj-row">
+                <span class="conj-label">${FORM_LABELS[f].zh}</span>
+                <span class="conj-form">${conj[f].kanji}</span>
+                <span class="conj-kana">${conj[f].kana}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="vocab-item top-error-item ${expanded ? 'expanded' : ''}" data-id="${id}">
+        <div class="vocab-main">
+          <span class="rank-pos">${i + 1}</span>
+          <div class="top-error-info">
+            <span class="top-error-kanji">${r.kanji}</span>
+            <span class="top-error-kana">${r.kana}</span>
+            <span class="top-error-meaning">${r.meaning}</span>
+          </div>
+          <span class="jlpt-badge jlpt-${r.jlpt}">${r.jlpt}</span>
+          <span class="top-error-count">${r.error_count} 次</span>
+          <span class="vocab-expand-btn">${expanded ? '▲' : '▼'}</span>
+        </div>
+        ${expandContent}
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.top-error-item').forEach(item => {
+    item.querySelector('.vocab-main').onclick = () => {
+      const id = item.dataset.id;
+      if (topErrorsExpanded.has(id)) topErrorsExpanded.delete(id);
+      else topErrorsExpanded.add(id);
+      renderTopErrorRows(container, rows);
+    };
+  });
+}
+
 async function loadTopErrorsInto(container) {
   const rows = await fetchTopErrors(5);
   if (!rows || rows.length === 0) {
     container.innerHTML = '<div class="ranking-loading">還沒有錯誤紀錄，快去練習！</div>';
     return;
   }
-  container.innerHTML = rows.map((r, i) => `
-    <div class="top-error-row">
-      <span class="rank-pos">${i + 1}</span>
-      <div class="top-error-info">
-        <span class="top-error-kanji">${r.kanji}</span>
-        <span class="top-error-kana">${r.kana}</span>
-        <span class="top-error-meaning">${r.meaning}</span>
-      </div>
-      <span class="jlpt-badge jlpt-${r.jlpt}">${r.jlpt}</span>
-      <span class="top-error-count">${r.error_count} 次</span>
-    </div>
-  `).join('');
+  renderTopErrorRows(container, rows);
 }
 
 // ── Boot ──────────────────────────────────────────────────────

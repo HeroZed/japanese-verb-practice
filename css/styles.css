@@ -850,7 +850,7 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
   gap: 10px;
   transition: border-color var(--transition);
 }
-.top-error-info   { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.top-error-info   { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .top-error-kanji  { font-weight: 700; font-size: var(--fz-sm); }
 .top-error-kana   { font-size: 0.72em; color: var(--ink-soft); }
 .top-error-meaning{ font-size: 0.72em; color: var(--ink-soft); }

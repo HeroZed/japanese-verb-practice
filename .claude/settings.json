@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"C:\\Users\\itman\\japanese-verb-practice\" && git diff --quiet && git diff --cached --quiet || (git add -A && git commit -m \"auto: update\" && git push origin main)"
+          }
+        ]
+      }
+    ]
+  }
+}
