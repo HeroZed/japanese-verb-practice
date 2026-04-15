@@ -422,7 +422,7 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
   color: var(--ink-soft);
   font-size: var(--fz-sm);
 }
-.gid-btn:hover   { border-color: var(--red); background: var(--red-pale); }
+.gid-btn:hover   { border-color: var(--ink-soft); background: var(--border); }
 .gid-btn.selected { border-color: var(--red); background: var(--red-pale); color: var(--red); }
 .gid-btn.selected small { color: var(--red); }
 
