@@ -115,7 +115,7 @@ function render() {
   switch (STATE.view) {
     case 'home':            app.appendChild(renderHome());            break;
     case 'practice-settings': app.appendChild(renderSettings());     break;
-    case 'practice':        app.appendChild(renderPractice());        break;
+    case 'practice':        app.appendChild(renderPractice());        app.querySelector('.fill-input')?.focus(); break;
     case 'results':         app.appendChild(renderResults());         break;
     case 'vocab':           app.appendChild(renderVocab());           break;
   }
