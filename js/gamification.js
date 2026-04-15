@@ -209,6 +209,54 @@ function checkAchievements(stats, settings) {
   return { newAchievements: newOnes, allAchievements: [...unlocked] };
 }
 
+// ── Verb Error Tracking ───────────────────────────────────────
+// wrongVerbs: array of { kanji, kana, meaning, jlpt }
+// Read current counts first, then upsert with count+1 to avoid race-loss
+async function trackVerbErrors(wrongVerbs) {
+  if (!wrongVerbs || wrongVerbs.length === 0) return;
+  const seen = new Set();
+  const unique = wrongVerbs.filter(v => { if (seen.has(v.kanji)) return false; seen.add(v.kanji); return true; });
+
+  // Fetch existing counts for these verbs
+  const kanjis = unique.map(v => `kanji=eq.${encodeURIComponent(v.kanji)}`).join(',');
+  let existing = {};
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/verb_errors?or=(${kanjis})&select=kanji,error_count`,
+      { headers: DB_HEADERS }
+    );
+    const rows = await res.json();
+    if (Array.isArray(rows)) rows.forEach(r => { existing[r.kanji] = r.error_count; });
+  } catch (e) { console.warn('trackVerbErrors fetch:', e); }
+
+  // Upsert with incremented counts
+  const payload = unique.map(v => ({
+    kanji:       v.kanji,
+    kana:        v.kana,
+    meaning:     v.meaning,
+    jlpt:        v.jlpt || 'N?',
+    error_count: (existing[v.kanji] || 0) + 1,
+  }));
+
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/verb_errors`, {
+      method: 'POST',
+      headers: { ...DB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) { console.warn('trackVerbErrors upsert:', e); }
+}
+
+async function fetchTopErrors(limit = 5) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/verb_errors?select=kanji,kana,meaning,jlpt,error_count&order=error_count.desc&limit=${limit}`,
+      { headers: DB_HEADERS }
+    );
+    return await res.json();
+  } catch (e) { return []; }
+}
+
 // ── Main apply function ───────────────────────────────────────
 function applyQuizResult(correct, total, settings) {
   const stats = loadStats();

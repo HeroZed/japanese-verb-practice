@@ -203,6 +203,8 @@ function renderHome() {
 
     ${renderRankingSection()}
 
+    ${renderTopErrorsSection()}
+
     <div class="home-words-section">
       <div class="home-words-header">
         <span class="home-words-title">今日單字</span>
@@ -233,8 +235,9 @@ function renderHome() {
     showNameModal();
   };
 
-  // Load ranking async after render
+  // Load ranking + top errors async after render
   loadRankingInto(el.querySelector('#ranking-list'));
+  loadTopErrorsInto(el.querySelector('#top-errors-list'));
 
   return el;
 }
@@ -574,6 +577,14 @@ function renderResults() {
   else if (pct >= 50) { grade = '繼續加油！'; gradeClass = 'grade-c'; }
   else { grade = '多加練習！'; gradeClass = 'grade-d'; }
 
+  // ── Track wrong verbs (fire-and-forget) ──
+  const wrongVerbs = questions.filter((q, i) => {
+    if (q.isGroupMode) return q.userAnswer !== String(q.answer);
+    const got = q.userAnswer.trim();
+    return got !== q.answer.kanji && got !== q.answer.kana;
+  }).map(q => ({ kanji: q.verb.kanji, kana: q.verb.kana, meaning: q.verb.meaning, jlpt: q.verb.jlpt }));
+  trackVerbErrors(wrongVerbs);
+
   // ── Apply gamification ──
   const reward = applyQuizResult(correct, total, STATE.settings);
   const newLvInfo = getLevelInfo(loadStats().xp);
@@ -855,6 +866,38 @@ async function loadRankingInto(container) {
       <span class="rank-xp">${r.xp} XP</span>
     </div>`;
   }).join('');
+}
+
+// ── Top Errors Section ────────────────────────────────────────
+function renderTopErrorsSection() {
+  return `<div class="top-errors-section">
+    <div class="ranking-header">
+      <span class="ranking-title">⚠️ 大家常錯的單字 TOP 5</span>
+    </div>
+    <div class="top-errors-list" id="top-errors-list">
+      <div class="ranking-loading">載入中...</div>
+    </div>
+  </div>`;
+}
+
+async function loadTopErrorsInto(container) {
+  const rows = await fetchTopErrors(5);
+  if (!rows || rows.length === 0) {
+    container.innerHTML = '<div class="ranking-loading">還沒有錯誤紀錄，快去練習！</div>';
+    return;
+  }
+  container.innerHTML = rows.map((r, i) => `
+    <div class="top-error-row">
+      <span class="rank-pos">${i + 1}</span>
+      <div class="top-error-info">
+        <span class="top-error-kanji">${r.kanji}</span>
+        <span class="top-error-kana">${r.kana}</span>
+        <span class="top-error-meaning">${r.meaning}</span>
+      </div>
+      <span class="jlpt-badge jlpt-${r.jlpt}">${r.jlpt}</span>
+      <span class="top-error-count">${r.error_count} 次</span>
+    </div>
+  `).join('');
 }
 
 // ── Boot ──────────────────────────────────────────────────────
