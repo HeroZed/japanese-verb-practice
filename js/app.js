@@ -176,6 +176,7 @@ function renderHome() {
         <button class="fs-btn ${STATE.fontSize==='medium'?'active':''}" data-size="medium">中</button>
         <button class="fs-btn ${STATE.fontSize==='large'?'active':''}" data-size="large">大</button>
       </div>
+      <button class="btn-back" id="btn-switch-user" title="切換使用者" style="font-size:0.8em">👤 ${getCurrentUser() || ''}</button>
     </div>
 
     <div class="home-hero">
@@ -200,6 +201,8 @@ function renderHome() {
 
     ${renderStatsCard()}
 
+    ${renderRankingSection()}
+
     <div class="home-words-section">
       <div class="home-words-header">
         <span class="home-words-title">今日單字</span>
@@ -222,6 +225,17 @@ function renderHome() {
   el.querySelectorAll('.fs-btn').forEach(b => {
     b.onclick = () => { STATE.fontSize = b.dataset.size; render(); };
   });
+  el.querySelector('#btn-switch-user').onclick = () => {
+    if (!confirm(`切換使用者？目前是「${getCurrentUser()}」`)) return;
+    clearCurrentUser();
+    applyTheme();
+    applyFontSize();
+    showNameModal();
+  };
+
+  // Load ranking async after render
+  loadRankingInto(el.querySelector('#ranking-list'));
+
   return el;
 }
 
@@ -773,8 +787,87 @@ function make(tag, cls) {
   return el;
 }
 
+// ── Name Modal ────────────────────────────────────────────────
+function showNameModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'name-modal-overlay';
+  overlay.innerHTML = `
+    <div class="name-modal-card">
+      <div class="home-logo">動</div>
+      <h2>日本語動詞練習</h2>
+      <p>輸入你的名稱開始使用<br>下次會自動記住，換裝置也能繼承紀錄</p>
+      <input class="name-input" id="name-input" type="text" placeholder="例如：小明" maxlength="20" autocomplete="off">
+      <button class="btn-primary" id="name-submit" style="width:100%">開始練習</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#name-input');
+  const submit = overlay.querySelector('#name-submit');
+  input.focus();
+
+  async function confirm() {
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    submit.disabled = true;
+    submit.textContent = '載入中...';
+    setCurrentUser(name);
+    await initUser(name);
+    overlay.remove();
+    render();
+  }
+
+  submit.onclick = confirm;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); });
+}
+
+// ── Ranking ───────────────────────────────────────────────────
+function renderRankingSection() {
+  return `<div class="ranking-section">
+    <div class="ranking-header">
+      <span class="ranking-title">🏆 排行榜</span>
+    </div>
+    <div class="ranking-list" id="ranking-list">
+      <div class="ranking-loading">載入中...</div>
+    </div>
+  </div>`;
+}
+
+async function loadRankingInto(container) {
+  const rows = await fetchRanking();
+  const me   = getCurrentUser();
+  if (!rows || rows.length === 0) {
+    container.innerHTML = '<div class="ranking-loading">還沒有人上榜，快去練習！</div>';
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  container.innerHTML = rows.map((r, i) => {
+    const lv   = getLevelInfo(r.xp);
+    const isMe = r.name === me;
+    const pos  = medals[i] || `${i + 1}`;
+    return `<div class="ranking-row ${isMe ? 'is-me' : ''}">
+      <span class="rank-pos">${pos}</span>
+      <div>
+        <div class="rank-name">${r.name}${isMe ? ' 　（你）' : ''}</div>
+        <div class="rank-lv">Lv.${lv.level} ${lv.name}</div>
+      </div>
+      <span class="rank-streak">${r.streak_current > 0 ? `🔥${r.streak_current}` : ''}</span>
+      <span class="rank-xp">${r.xp} XP</span>
+    </div>`;
+  }).join('');
+}
+
 // ── Boot ──────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   refreshHomeWords();
-  render();
+  const user = getCurrentUser();
+  if (!user) {
+    // Apply theme before showing modal
+    applyTheme();
+    applyFontSize();
+    showNameModal();
+  } else {
+    await initUser(user);
+    render();
+  }
 });

@@ -1,4 +1,12 @@
-// gamification.js — XP, Levels, Streak, Achievements
+// gamification.js — XP, Levels, Streak, Achievements + Supabase backend
+
+const SUPABASE_URL = 'https://fjafwejmjwqwpgjuqrjl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqYWZ3ZWptandxd3BnanVxcmpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTM2MTQsImV4cCI6MjA5MTgyOTYxNH0.lnAwiYo0iYbsumsgOaiWRoPmQ8M8be0cSwT4dvbrA5c';
+const DB_HEADERS  = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+};
 
 // ── Levels ────────────────────────────────────────────────────
 const LEVELS = [
@@ -33,14 +41,25 @@ const ACHIEVEMENTS = [
   { id:'quizzes_10',     name:'勤奮練習',   icon:'📚', desc:'完成 10 回合練習' },
 ];
 
-// ── Persistence ───────────────────────────────────────────────
-const STORAGE_KEY = 'jpVerb_stats';
+// ── Current user ──────────────────────────────────────────────
+const USER_KEY = 'jpVerb_user';
 
-function loadStats() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
+function getCurrentUser() {
+  return localStorage.getItem(USER_KEY) || null;
+}
+
+function setCurrentUser(name) {
+  localStorage.setItem(USER_KEY, name.trim());
+}
+
+function clearCurrentUser() {
+  localStorage.removeItem(USER_KEY);
+}
+
+// ── Stats cache (keeps UI synchronous) ───────────────────────
+let _statsCache = null;
+
+function defaultStats() {
   return {
     xp: 0,
     quizzesCompleted: 0,
@@ -51,8 +70,74 @@ function loadStats() {
   };
 }
 
+function loadStats() {
+  return _statsCache || defaultStats();
+}
+
+// ── Supabase DB helpers ───────────────────────────────────────
+async function fetchStatsFromDB(name) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/verb_stats?name=eq.${encodeURIComponent(name)}&select=*`,
+      { headers: DB_HEADERS }
+    );
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length > 0) {
+      const r = rows[0];
+      return {
+        xp:              r.xp,
+        quizzesCompleted: r.quizzes_completed,
+        totalCorrect:    r.total_correct,
+        totalAnswered:   r.total_answered,
+        streak: {
+          current:  r.streak_current,
+          longest:  r.streak_longest,
+          lastDate: r.streak_last_date,
+        },
+        achievements: r.achievements || [],
+      };
+    }
+  } catch (e) { console.warn('fetchStatsFromDB:', e); }
+  return defaultStats();
+}
+
 function saveStats(stats) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stats)); } catch (e) {}
+  _statsCache = stats;
+  const user = getCurrentUser();
+  if (!user) return;
+  // Fire-and-forget upsert
+  fetch(`${SUPABASE_URL}/rest/v1/verb_stats`, {
+    method: 'POST',
+    headers: { ...DB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({
+      name:              user,
+      xp:                stats.xp,
+      quizzes_completed: stats.quizzesCompleted,
+      total_correct:     stats.totalCorrect,
+      total_answered:    stats.totalAnswered,
+      streak_current:    stats.streak.current,
+      streak_longest:    stats.streak.longest,
+      streak_last_date:  stats.streak.lastDate,
+      achievements:      stats.achievements,
+      updated_at:        new Date().toISOString(),
+    }),
+  }).catch(e => console.warn('saveStats:', e));
+}
+
+// Call on boot after user is known
+async function initUser(name) {
+  _statsCache = await fetchStatsFromDB(name);
+}
+
+// Fetch ranking list (top 20 by XP)
+async function fetchRanking() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/verb_stats?select=name,xp,streak_current&order=xp.desc&limit=20`,
+      { headers: DB_HEADERS }
+    );
+    return await res.json();
+  } catch (e) { return []; }
 }
 
 // ── Level helpers ─────────────────────────────────────────────
@@ -61,8 +146,8 @@ function getLevelInfo(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
     if (xp >= LEVELS[i].xp) { lv = LEVELS[i]; break; }
   }
-  const isMax = lv.level === LEVELS[LEVELS.length - 1].level;
-  const nextLv = isMax ? null : LEVELS[lv.level]; // index = level (0-based +1)
+  const isMax  = lv.level === LEVELS[LEVELS.length - 1].level;
+  const nextLv = isMax ? null : LEVELS[lv.level];
   const currentXP = xp - lv.xp;
   const neededXP  = isMax ? 0 : nextLv.xp - lv.xp;
   const progress  = isMax ? 100 : Math.round((currentXP / neededXP) * 100);
@@ -72,21 +157,20 @@ function getLevelInfo(xp) {
 // ── XP Computation ────────────────────────────────────────────
 function computeXP(correct, total, streakDays) {
   let base = correct * 10;
-  if (correct === total && total > 0) base += 20; // perfect bonus
+  if (correct === total && total > 0) base += 20;
   const multiplier = streakDays >= 3 ? 1.5 : 1;
   return Math.round(base * multiplier);
 }
 
 // ── Streak update ─────────────────────────────────────────────
 function updateStreak(streak) {
-  const today = new Date().toISOString().slice(0, 10);
-  if (streak.lastDate === today) return streak; // already practiced today
-
+  const today     = new Date().toISOString().slice(0, 10);
+  if (streak.lastDate === today) return streak;
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const newCurrent = streak.lastDate === yesterday ? streak.current + 1 : 1;
   return {
-    current: newCurrent,
-    longest: Math.max(streak.longest, newCurrent),
+    current:  newCurrent,
+    longest:  Math.max(streak.longest, newCurrent),
     lastDate: today,
   };
 }
@@ -94,13 +178,10 @@ function updateStreak(streak) {
 // ── Achievement check ─────────────────────────────────────────
 function checkAchievements(stats, settings) {
   const unlocked = new Set(stats.achievements);
-  const newOnes = [];
+  const newOnes  = [];
 
   function check(id, condition) {
-    if (!unlocked.has(id) && condition) {
-      unlocked.add(id);
-      newOnes.push(id);
-    }
+    if (!unlocked.has(id) && condition) { unlocked.add(id); newOnes.push(id); }
   }
 
   check('first_quiz',     stats.quizzesCompleted >= 1);
@@ -113,8 +194,8 @@ function checkAchievements(stats, settings) {
   check('streak_30',      stats.streak.current >= 30);
 
   const lvInfo = getLevelInfo(stats.xp);
-  check('level_5',        lvInfo.level >= 5);
-  check('level_10',       lvInfo.level >= 10);
+  check('level_5',  lvInfo.level >= 5);
+  check('level_10', lvInfo.level >= 10);
 
   if (settings) {
     const isPerfect = settings._correct === settings._total && settings._total > 0;
@@ -129,27 +210,20 @@ function checkAchievements(stats, settings) {
 }
 
 // ── Main apply function ───────────────────────────────────────
-// Call this when a quiz finishes.
-// Returns { xpGained, levelBefore, levelAfter, newAchievements }
 function applyQuizResult(correct, total, settings) {
   const stats = loadStats();
 
-  // Streak
-  const newStreak = updateStreak(stats.streak);
-  stats.streak = newStreak;
+  stats.streak = updateStreak(stats.streak);
 
-  // XP
-  const xpGained = computeXP(correct, total, newStreak.current);
+  const xpGained    = computeXP(correct, total, stats.streak.current);
   const levelBefore = getLevelInfo(stats.xp).level;
   stats.xp += xpGained;
-  const levelAfter = getLevelInfo(stats.xp).level;
+  const levelAfter  = getLevelInfo(stats.xp).level;
 
-  // Cumulative stats
   stats.quizzesCompleted += 1;
-  stats.totalCorrect  += correct;
-  stats.totalAnswered += total;
+  stats.totalCorrect     += correct;
+  stats.totalAnswered    += total;
 
-  // Achievements — pass enriched settings
   const enriched = settings
     ? { ...settings, _correct: correct, _total: total, _pct: Math.round((correct / total) * 100) }
     : null;
