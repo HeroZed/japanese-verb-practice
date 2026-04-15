@@ -149,6 +149,32 @@ function renderStatsCard() {
   </div>`;
 }
 
+// ── Achievements Section (home) ───────────────────────────────
+function renderAchievementsSection() {
+  const stats = loadStats();
+  const unlocked = new Set(stats.achievements);
+  const unlockedCount = unlocked.size;
+  const totalCount = ACHIEVEMENTS.length;
+
+  const items = ACHIEVEMENTS.map(a => {
+    const done = unlocked.has(a.id);
+    return `<div class="ach-item ${done ? 'unlocked' : 'locked'}">
+      <span class="ach-icon">${done ? a.icon : '🔒'}</span>
+      <div class="ach-info">
+        <span class="ach-name">${a.name}</span>
+        <span class="ach-desc">${a.desc}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="achievements-section">
+    <div class="ranking-header">
+      <span class="ranking-title">🏅 我的成就（${unlockedCount}/${totalCount}）</span>
+    </div>
+    <div class="ach-list">${items}</div>
+  </div>`;
+}
+
 // ── Home ─────────────────────────────────────────────────────
 function renderHome() {
   const wordCards = STATE.homeWords.map(verb => {
@@ -200,6 +226,8 @@ function renderHome() {
     </div>
 
     ${renderStatsCard()}
+
+    ${renderAchievementsSection()}
 
     ${renderRankingSection()}
 

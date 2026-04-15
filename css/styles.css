@@ -809,6 +809,30 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
 }
 .name-input:focus { border-color: var(--red); }
 
+/* ── Achievements Section ─────────────────────────────────────── */
+.achievements-section { width: 100%; max-width: 480px; }
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ach-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border-color var(--transition);
+}
+.ach-item.unlocked { border-color: var(--red); }
+.ach-item.locked   { opacity: 0.45; }
+.ach-icon { font-size: 1.5em; flex-shrink: 0; width: 32px; text-align: center; }
+.ach-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ach-name { font-weight: 700; font-size: var(--fz-sm); }
+.ach-desc { font-size: 0.72em; color: var(--ink-soft); }
+
 /* ── Ranking List ─────────────────────────────────────────────── */
 .ranking-section { width: 100%; max-width: 480px; }
 .ranking-header {
