@@ -548,7 +548,9 @@ function renderResults() {
   `;
 
   el.querySelector('#btn-retry').onclick = () => {
-    STATE.quiz.questions = generateQuestions();
+    STATE.quiz.questions = STATE.settings.quizMode === 'groupid'
+      ? generateGroupQuestions()
+      : generateQuestions();
     STATE.quiz.current = 0;
     setView('practice');
   };
