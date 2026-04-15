@@ -560,11 +560,8 @@ function renderResults() {
   return el;
 }
 
-// ── Vocabulary ────────────────────────────────────────────────
-function renderVocab() {
-  const v = STATE.vocab;
-  const el = make('div', 'view-vocab');
-
+// ── Vocabulary helpers ────────────────────────────────────────
+function buildVocabListHTML(v) {
   const filtered = VERB_LIST.filter(verb => {
     if (v.filterGroup && verb.group !== v.filterGroup) return false;
     if (v.searchText) {
@@ -574,17 +571,15 @@ function renderVocab() {
     return true;
   });
 
+  const primaryForms   = v.showForm === 'plain' ? PLAIN_FORMS  : POLITE_FORMS;
+  const secondaryForms = v.showForm === 'plain' ? POLITE_FORMS : PLAIN_FORMS;
+  const primaryLabel   = v.showForm === 'plain' ? '普通體' : '禮貌體';
+  const secondLabel    = v.showForm === 'plain' ? '禮貌體' : '普通體';
+
   const listItems = filtered.map(verb => {
     const conj = getConjugations(verb);
     const expanded = v.expanded.has(verb.kana + verb.kanji);
-
-    // What to show as primary (based on showForm)
-    const primaryForms  = v.showForm === 'plain'  ? PLAIN_FORMS  : POLITE_FORMS;
-    const secondaryForms = v.showForm === 'plain' ? POLITE_FORMS : PLAIN_FORMS;
-    const primaryLabel  = v.showForm === 'plain'  ? '普通體' : '禮貌體';
-    const secondLabel   = v.showForm === 'plain'  ? '禮貌體' : '普通體';
-
-    const primaryDisplay = conj[primaryForms[0]].kanji; // dictionary or ます form
+    const primaryDisplay = conj[primaryForms[0]].kanji;
 
     const expandContent = expanded ? `
       <div class="vocab-expand">
@@ -633,6 +628,36 @@ function renderVocab() {
     `;
   }).join('');
 
+  return { listItems, count: filtered.length };
+}
+
+function attachVocabItemListeners(container) {
+  container.querySelectorAll('.vocab-item').forEach(item => {
+    item.querySelector('.vocab-main').onclick = () => {
+      const id = item.dataset.id;
+      if (STATE.vocab.expanded.has(id)) STATE.vocab.expanded.delete(id);
+      else STATE.vocab.expanded.add(id);
+      refreshVocabList();
+    };
+  });
+}
+
+function refreshVocabList() {
+  const listEl  = document.querySelector('#vocab-list');
+  const countEl = document.querySelector('.vocab-count');
+  if (!listEl) return;
+  const { listItems, count } = buildVocabListHTML(STATE.vocab);
+  listEl.innerHTML  = listItems;
+  if (countEl) countEl.textContent = count + ' 個動詞';
+  attachVocabItemListeners(listEl);
+}
+
+// ── Vocabulary ────────────────────────────────────────────────
+function renderVocab() {
+  const v = STATE.vocab;
+  const el = make('div', 'view-vocab');
+  const { listItems, count } = buildVocabListHTML(v);
+
   el.innerHTML = `
     <div class="page-header">
       <button class="btn-back" id="back-btn">← 返回</button>
@@ -653,42 +678,19 @@ function renderVocab() {
         </select>
         <input type="text" class="vocab-search" id="vocab-search" placeholder="搜尋單字..." value="${v.searchText}">
       </div>
-      <div class="vocab-count">${filtered.length} 個動詞</div>
+      <div class="vocab-count">${count} 個動詞</div>
     </div>
 
     <div class="vocab-list" id="vocab-list">${listItems}</div>
   `;
 
   el.querySelector('#back-btn').onclick = () => setView('home');
+  el.querySelector('#toggle-plain').onclick  = () => { v.showForm = 'plain';  render(); };
+  el.querySelector('#toggle-polite').onclick = () => { v.showForm = 'polite'; render(); };
+  el.querySelector('#group-sel').onchange = (e) => { v.filterGroup = parseInt(e.target.value); render(); };
+  el.querySelector('#vocab-search').oninput = (e) => { v.searchText = e.target.value; refreshVocabList(); };
 
-  el.querySelector('#toggle-plain').onclick = () => {
-    v.showForm = 'plain'; render();
-  };
-  el.querySelector('#toggle-polite').onclick = () => {
-    v.showForm = 'polite'; render();
-  };
-
-  el.querySelector('#group-sel').onchange = (e) => {
-    v.filterGroup = parseInt(e.target.value); render();
-  };
-
-  el.querySelector('#vocab-search').oninput = (e) => {
-    const cursor = e.target.selectionStart;
-    v.searchText = e.target.value;
-    render();
-    const inp = document.querySelector('#vocab-search');
-    if (inp) { inp.focus(); inp.setSelectionRange(cursor, cursor); }
-  };
-
-  el.querySelectorAll('.vocab-item').forEach(item => {
-    item.querySelector('.vocab-main').onclick = () => {
-      const id = item.dataset.id;
-      if (v.expanded.has(id)) v.expanded.delete(id);
-      else v.expanded.add(id);
-      render();
-    };
-  });
-
+  attachVocabItemListeners(el.querySelector('#vocab-list'));
   return el;
 }
 
