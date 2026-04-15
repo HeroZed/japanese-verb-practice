@@ -253,6 +253,21 @@ a { color: var(--red); }
 .wc-meaning { font-size: 0.78em; color: var(--ink-mid); font-weight: 600; padding: 2px 0; }
 .wc-polite  { font-size: 0.82em; color: var(--red); font-weight: 700; }
 .wc-group   { font-size: 0.7em; background: var(--red-pale); color: var(--red); padding: 1px 6px; border-radius: 10px; margin-top: 2px; }
+.wc-jlpt    { font-size: 0.7em; padding: 1px 6px; border-radius: 10px; margin-top: 2px; font-weight: 700; }
+
+/* ── JLPT badges ─────────────────────────────────────────────── */
+.jlpt-badge { font-size: 0.72em; padding: 1px 7px; border-radius: 10px; font-weight: 700; white-space: nowrap; }
+.jlpt-N5 { background: #d4edda; color: #1a6632; }
+.jlpt-N4 { background: #cce5ff; color: #004085; }
+.jlpt-N3 { background: #fff3cd; color: #856404; }
+.jlpt-N2 { background: #ffe5cc; color: #7a3b00; }
+.jlpt-N1 { background: #f8d7da; color: #721c24; }
+
+body.theme-dark .jlpt-N5 { background: #0d3320; color: #5aee90; }
+body.theme-dark .jlpt-N4 { background: #0d2240; color: #66b2ff; }
+body.theme-dark .jlpt-N3 { background: #332a00; color: #ffd966; }
+body.theme-dark .jlpt-N2 { background: #3a1f00; color: #ffaa55; }
+body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
 .fs-btn {
   background: var(--card);
   border: 1.5px solid var(--border);

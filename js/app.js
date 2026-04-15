@@ -132,6 +132,7 @@ function renderHome() {
         <span class="wc-meaning">${verb.meaning}</span>
         <span class="wc-polite">${conj.polite_pres_pos.kanji}</span>
         <span class="wc-group">第${['一','二','三'][verb.group-1]}類</span>
+        <span class="jlpt-badge jlpt-${verb.jlpt}">${verb.jlpt}</span>
       </div>`;
   }).join('');
 
@@ -443,6 +444,7 @@ function renderConjCard(q) {
     <div class="q-meta">
       ${STATE.settings.hideGroup ? '' : `<span class="q-group">${GROUP_NAMES[q.verb.group]}</span>`}
       <span class="q-form-label">${FORM_LABELS[q.qKey].zh}</span>
+      <span class="jlpt-badge jlpt-${q.verb.jlpt}">${q.verb.jlpt}</span>
     </div>
     <div class="q-verb-kanji">${q.question.kanji}</div>
     <div class="q-verb-kana">${q.question.kana}</div>
@@ -460,7 +462,7 @@ function renderGroupIdCard(q) {
     `<button class="gid-btn" data-group="${g}">${labels[g]}<small>（${['五段動詞','一段動詞','不規則動詞'][g-1]}）</small></button>`
   ).join('');
   return `
-    <div class="q-meta"><span class="q-form-label">辨別第幾類動詞</span></div>
+    <div class="q-meta"><span class="q-form-label">辨別第幾類動詞</span><span class="jlpt-badge jlpt-${q.verb.jlpt}">${q.verb.jlpt}</span></div>
     <div class="q-verb-kanji">${q.verb.kanji}</div>
     <div class="q-verb-kana">${q.verb.kana}</div>
     <div class="q-meaning">${q.verb.meaning}</div>
@@ -492,7 +494,7 @@ function renderResults() {
       got = q.userAnswer;
       isOk = got === expected;
       if (isOk) correct++;
-      verbCell  = `${q.verb.kanji}<br><small>${q.verb.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small>`;
+      verbCell  = `${q.verb.kanji}<br><small>${q.verb.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small><br><span class="jlpt-badge jlpt-${q.verb.jlpt}">${q.verb.jlpt}</span>`;
       dirCell   = `<small>辨別類別</small>`;
       resultCell = isOk ? '✔' : `<span class="correct-ans">${GROUP_LABEL[expected]}</span>`;
     } else {
@@ -500,7 +502,7 @@ function renderResults() {
       got = q.userAnswer.trim();
       isOk = got === expected || got === q.answer.kana;
       if (isOk) correct++;
-      verbCell  = `${q.question.kanji}<br><small>${q.question.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small>`;
+      verbCell  = `${q.question.kanji}<br><small>${q.question.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small><br><span class="jlpt-badge jlpt-${q.verb.jlpt}">${q.verb.jlpt}</span>`;
       dirCell   = `<small>${FORM_LABELS[q.qKey].zh}→${FORM_LABELS[q.aKey].zh}</small>`;
       resultCell = isOk ? '✔' : `<span class="correct-ans">${expected}</span><br><small>${q.answer.kana}</small>`;
     }
@@ -622,6 +624,7 @@ function renderVocab() {
           </div>
           <div class="vocab-right">
             <span class="vocab-group">第${['一','二','三'][verb.group-1]}類</span>
+            <span class="jlpt-badge jlpt-${verb.jlpt}">${verb.jlpt}</span>
             <span class="vocab-expand-btn">${expanded ? '▲' : '▼'}</span>
           </div>
         </div>
