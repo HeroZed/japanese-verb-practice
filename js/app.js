@@ -673,7 +673,11 @@ function renderVocab() {
   };
 
   el.querySelector('#vocab-search').oninput = (e) => {
-    v.searchText = e.target.value; render();
+    const cursor = e.target.selectionStart;
+    v.searchText = e.target.value;
+    render();
+    const inp = document.querySelector('#vocab-search');
+    if (inp) { inp.focus(); inp.setSelectionRange(cursor, cursor); }
   };
 
   el.querySelectorAll('.vocab-item').forEach(item => {
