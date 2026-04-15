@@ -492,7 +492,7 @@ function renderResults() {
       got = q.userAnswer;
       isOk = got === expected;
       if (isOk) correct++;
-      verbCell  = `${q.verb.kanji}<br><small>${q.verb.kana}</small>`;
+      verbCell  = `${q.verb.kanji}<br><small>${q.verb.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small>`;
       dirCell   = `<small>辨別類別</small>`;
       resultCell = isOk ? '✔' : `<span class="correct-ans">${GROUP_LABEL[expected]}</span>`;
     } else {
@@ -500,7 +500,7 @@ function renderResults() {
       got = q.userAnswer.trim();
       isOk = got === expected || got === q.answer.kana;
       if (isOk) correct++;
-      verbCell  = `${q.question.kanji}<br><small>${q.question.kana}</small>`;
+      verbCell  = `${q.question.kanji}<br><small>${q.question.kana}</small><br><small style="color:var(--ink-soft)">${q.verb.meaning}</small>`;
       dirCell   = `<small>${FORM_LABELS[q.qKey].zh}→${FORM_LABELS[q.aKey].zh}</small>`;
       resultCell = isOk ? '✔' : `<span class="correct-ans">${expected}</span><br><small>${q.answer.kana}</small>`;
     }
