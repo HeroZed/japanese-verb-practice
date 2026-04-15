@@ -688,7 +688,19 @@ function renderVocab() {
   el.querySelector('#toggle-plain').onclick  = () => { v.showForm = 'plain';  render(); };
   el.querySelector('#toggle-polite').onclick = () => { v.showForm = 'polite'; render(); };
   el.querySelector('#group-sel').onchange = (e) => { v.filterGroup = parseInt(e.target.value); render(); };
-  el.querySelector('#vocab-search').oninput = (e) => { v.searchText = e.target.value; refreshVocabList(); };
+  const searchEl = el.querySelector('#vocab-search');
+  let composing = false;
+  searchEl.addEventListener('compositionstart', () => { composing = true; });
+  searchEl.addEventListener('compositionend',   (e) => {
+    composing = false;
+    v.searchText = e.target.value;
+    refreshVocabList();
+  });
+  searchEl.addEventListener('input', (e) => {
+    if (composing) return;
+    v.searchText = e.target.value;
+    refreshVocabList();
+  });
 
   attachVocabItemListeners(el.querySelector('#vocab-list'));
   return el;
