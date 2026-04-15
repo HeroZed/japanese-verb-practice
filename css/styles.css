@@ -540,7 +540,7 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
 }
 .toggle-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
 
-.vocab-filter-wrap { display: flex; gap: 8px; }
+.vocab-filter-wrap { display: flex; gap: 8px; min-width: 0; overflow: hidden; }
 .vocab-group-sel {
   padding: 8px 12px;
   border: 1.5px solid var(--border);
@@ -549,6 +549,7 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
   color: var(--ink);
   outline: none;
   flex-shrink: 0;
+  max-width: 130px;
 }
 .vocab-search {
   flex: 1;
@@ -636,6 +637,10 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
 
   .vocab-expand { grid-template-columns: 1fr; }
   .expand-section:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+
+  .vocab-filter-wrap { flex-direction: column; }
+  .vocab-group-sel   { max-width: 100%; width: 100%; }
+  .vocab-search      { width: 100%; }
 
   .q-verb-kanji { font-size: 2.4em; }
 
