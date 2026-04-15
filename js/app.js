@@ -124,6 +124,31 @@ function render() {
   }
 }
 
+// ── Stats Card (home) ─────────────────────────────────────────
+function renderStatsCard() {
+  const stats = loadStats();
+  const lv    = getLevelInfo(stats.xp);
+  const streak = stats.streak.current;
+  const xpText = lv.isMax ? 'MAX' : `${lv.currentXP} / ${lv.neededXP} XP`;
+  const unlockedCount = stats.achievements.length;
+  const totalCount    = ACHIEVEMENTS.length;
+
+  return `<div class="stats-card">
+    <div class="stats-top">
+      <div class="stats-level">
+        <span class="level-badge">Lv.${lv.level}</span>
+        <span class="level-name">${lv.name}</span>
+      </div>
+      <div class="stats-meta">
+        <span>🔥 ${streak} 天</span>
+        <span>🏆 ${unlockedCount}/${totalCount}</span>
+      </div>
+    </div>
+    <div class="xp-bar"><div class="xp-fill" style="width:${lv.progress}%"></div></div>
+    <div class="xp-label">${xpText}</div>
+  </div>`;
+}
+
 // ── Home ─────────────────────────────────────────────────────
 function renderHome() {
   const wordCards = STATE.homeWords.map(verb => {
@@ -172,6 +197,8 @@ function renderHome() {
         <span class="card-sub">瀏覽所有動詞</span>
       </button>
     </div>
+
+    ${renderStatsCard()}
 
     <div class="home-words-section">
       <div class="home-words-header">
@@ -391,6 +418,7 @@ function renderPractice() {
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
       <span class="progress-text">${current + 1} / ${total}</span>
+      ${loadStats().streak.current >= 1 ? `<span class="streak-badge">🔥 ${loadStats().streak.current}</span>` : ''}
     </div>
     <div class="question-card">${cardBody}</div>
     <div class="practice-nav">
@@ -532,6 +560,28 @@ function renderResults() {
   else if (pct >= 50) { grade = '繼續加油！'; gradeClass = 'grade-c'; }
   else { grade = '多加練習！'; gradeClass = 'grade-d'; }
 
+  // ── Apply gamification ──
+  const reward = applyQuizResult(correct, total, STATE.settings);
+  const newLvInfo = getLevelInfo(loadStats().xp);
+
+  const levelUpHtml = reward.levelAfter > reward.levelBefore
+    ? `<span class="level-up-msg">🎉 升級！→ Lv.${reward.levelAfter} ${newLvInfo.name}</span>`
+    : '';
+
+  const achHtml = reward.newAchievements.map(id => {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    return a ? `<span class="achievement-unlock">${a.icon} ${a.name}</span>` : '';
+  }).join('');
+
+  const xpRewardHtml = `
+    <div class="xp-reward">
+      <div class="xp-reward-top">
+        <span class="xp-gained">+${reward.xpGained} XP</span>
+        ${levelUpHtml}
+      </div>
+      ${achHtml ? `<div class="achievement-list">${achHtml}</div>` : ''}
+    </div>`;
+
   const el = make('div', 'view-results');
   el.innerHTML = `
     <div class="page-header">
@@ -544,6 +594,7 @@ function renderResults() {
       </div>
       <div class="score-grade ${gradeClass}">${grade}</div>
     </div>
+    ${xpRewardHtml}
     <div class="results-table-wrap">
       <table class="results-table">
         <thead>
