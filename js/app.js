@@ -75,7 +75,10 @@ function generateQuestions() {
   pool.forEach(verb => {
     const conj = getConjugations(verb);
     tenses.forEach(tense => {
-      const { qKey, aKey } = buildTenseKey(direction, tense);
+      const effectiveDir = direction === 'random'
+        ? (Math.random() < 0.5 ? 'plain-to-polite' : 'polite-to-plain')
+        : direction;
+      const { qKey, aKey } = buildTenseKey(effectiveDir, tense);
       allCombos.push({ verb, conj, qKey, aKey });
     });
   });
@@ -241,6 +244,10 @@ function renderSettings() {
             <input type="radio" name="direction" value="polite-to-plain" ${s.direction==='polite-to-plain'?'checked':''}>
             <span>禮貌體→普通體</span>
           </label>
+          <label class="radio-opt ${s.direction==='random'?'active':''}">
+            <input type="radio" name="direction" value="random" ${s.direction==='random'?'checked':''}>
+            <span>隨機</span>
+          </label>
         </div>
       </div>
 
@@ -369,7 +376,9 @@ function renderPractice() {
 
   const titleLabel = isGroupId
     ? '辨別動詞類別'
-    : (STATE.settings.direction === 'plain-to-polite' ? '普通體 → 禮貌體' : '禮貌體 → 普通體');
+    : (STATE.settings.direction === 'plain-to-polite' ? '普通體 → 禮貌體'
+       : STATE.settings.direction === 'polite-to-plain' ? '禮貌體 → 普通體'
+       : '隨機方向');
 
   const cardBody = isGroupId ? renderGroupIdCard(q) : renderConjCard(q);
 
