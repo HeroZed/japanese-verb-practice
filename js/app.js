@@ -124,14 +124,72 @@ function render() {
   }
 }
 
+// ── Achievement progress helper ───────────────────────────────
+function getAchProgress(id, stats) {
+  const lv = getLevelInfo(stats.xp).level;
+  const map = {
+    first_quiz:  { cur: Math.min(stats.quizzesCompleted, 1),  max: 1,   unit: '回合' },
+    quizzes_10:  { cur: Math.min(stats.quizzesCompleted, 10), max: 10,  unit: '回合' },
+    correct_50:  { cur: Math.min(stats.totalCorrect, 50),     max: 50,  unit: '題' },
+    correct_100: { cur: Math.min(stats.totalCorrect, 100),    max: 100, unit: '題' },
+    correct_500: { cur: Math.min(stats.totalCorrect, 500),    max: 500, unit: '題' },
+    streak_3:    { cur: Math.min(stats.streak.current, 3),    max: 3,   unit: '天' },
+    streak_7:    { cur: Math.min(stats.streak.current, 7),    max: 7,   unit: '天' },
+    streak_30:   { cur: Math.min(stats.streak.current, 30),   max: 30,  unit: '天' },
+    level_5:     { cur: Math.min(lv, 5),                      max: 5,   unit: 'Lv' },
+    level_10:    { cur: Math.min(lv, 10),                     max: 10,  unit: 'Lv' },
+  };
+  return map[id] || null;
+}
+
+// ── Achievement modal ─────────────────────────────────────────
+function showAchModal(id) {
+  const stats = loadStats();
+  const unlocked = new Set(stats.achievements);
+  const a = ACHIEVEMENTS.find(x => x.id === id);
+  if (!a) return;
+  const done = unlocked.has(id);
+  const prog = getAchProgress(id, stats);
+
+  document.getElementById('ach-modal-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ach-modal-overlay';
+  overlay.className = 'ach-modal-overlay';
+
+  const progHtml = prog ? `
+    <div class="ach-modal-prog">
+      <div class="ach-modal-prog-bar">
+        <div class="ach-modal-prog-fill" style="width:${Math.round(prog.cur / prog.max * 100)}%"></div>
+      </div>
+      <div class="ach-modal-prog-text">${prog.cur} / ${prog.max} ${prog.unit}</div>
+    </div>` : '';
+
+  overlay.innerHTML = `
+    <div class="ach-modal ${done ? 'done' : ''}">
+      <div class="ach-modal-icon">${done ? a.icon : '🔒'}</div>
+      <div class="ach-modal-name">${a.name}</div>
+      <div class="ach-modal-desc">${a.desc}</div>
+      ${progHtml}
+      <div class="ach-modal-status">${done ? '✅ 已解鎖' : '🔒 尚未解鎖'}</div>
+    </div>`;
+
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
 // ── Stats Card (home) ─────────────────────────────────────────
 function renderStatsCard() {
   const stats = loadStats();
   const lv    = getLevelInfo(stats.xp);
   const streak = stats.streak.current;
   const xpText = lv.isMax ? 'MAX' : `${lv.currentXP} / ${lv.neededXP} XP`;
-  const unlockedCount = stats.achievements.length;
-  const totalCount    = ACHIEVEMENTS.length;
+  const unlocked = new Set(stats.achievements);
+
+  const achIcons = ACHIEVEMENTS.map(a => {
+    const done = unlocked.has(a.id);
+    return `<button class="ach-icon-btn ${done ? 'unlocked' : 'locked'}" data-ach="${a.id}" data-tooltip="${a.name}">${done ? a.icon : '🔒'}</button>`;
+  }).join('');
 
   return `<div class="stats-card">
     <div class="stats-top">
@@ -141,37 +199,11 @@ function renderStatsCard() {
       </div>
       <div class="stats-meta">
         <span>🔥 ${streak} 天</span>
-        <span>🏆 ${unlockedCount}/${totalCount}</span>
       </div>
     </div>
     <div class="xp-bar"><div class="xp-fill" style="width:${lv.progress}%"></div></div>
     <div class="xp-label">${xpText}</div>
-  </div>`;
-}
-
-// ── Achievements Section (home) ───────────────────────────────
-function renderAchievementsSection() {
-  const stats = loadStats();
-  const unlocked = new Set(stats.achievements);
-  const unlockedCount = unlocked.size;
-  const totalCount = ACHIEVEMENTS.length;
-
-  const items = ACHIEVEMENTS.map(a => {
-    const done = unlocked.has(a.id);
-    return `<div class="ach-item ${done ? 'unlocked' : 'locked'}">
-      <span class="ach-icon">${done ? a.icon : '🔒'}</span>
-      <div class="ach-info">
-        <span class="ach-name">${a.name}</span>
-        <span class="ach-desc">${a.desc}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  return `<div class="achievements-section">
-    <div class="ranking-header">
-      <span class="ranking-title">🏅 我的成就（${unlockedCount}/${totalCount}）</span>
-    </div>
-    <div class="ach-list">${items}</div>
+    <div class="ach-icons">${achIcons}</div>
   </div>`;
 }
 
@@ -227,8 +259,6 @@ function renderHome() {
 
     ${renderStatsCard()}
 
-    ${renderAchievementsSection()}
-
     ${renderRankingSection()}
 
     ${renderTopErrorsSection()}
@@ -262,6 +292,11 @@ function renderHome() {
     applyFontSize();
     showNameModal();
   };
+
+  // Achievement icon clicks
+  el.querySelectorAll('.ach-icon-btn').forEach(btn => {
+    btn.onclick = () => showAchModal(btn.dataset.ach);
+  });
 
   // Load ranking + top errors async after render
   loadRankingInto(el.querySelector('#ranking-list'));
