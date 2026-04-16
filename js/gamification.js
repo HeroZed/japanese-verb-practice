@@ -133,7 +133,7 @@ async function initUser(name) {
 async function fetchRanking() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/verb_stats?select=name,xp,streak_current&order=xp.desc&limit=20`,
+      `${SUPABASE_URL}/rest/v1/verb_stats?select=name,xp,streak_current,achievements&order=xp.desc&limit=20`,
       { headers: DB_HEADERS }
     );
     return await res.json();

@@ -916,14 +916,20 @@ async function loadRankingInto(container) {
   }
   const medals = ['🥇','🥈','🥉'];
   container.innerHTML = rows.map((r, i) => {
-    const lv   = getLevelInfo(r.xp);
-    const isMe = r.name === me;
-    const pos  = medals[i] || `${i + 1}`;
+    const lv      = getLevelInfo(r.xp);
+    const isMe    = r.name === me;
+    const pos     = medals[i] || `${i + 1}`;
+    const unlocked = new Set(Array.isArray(r.achievements) ? r.achievements : []);
+    const achIcons = ACHIEVEMENTS
+      .filter(a => unlocked.has(a.id))
+      .map(a => `<span class="rank-ach-icon" data-tooltip="${a.name}">${a.icon}</span>`)
+      .join('');
     return `<div class="ranking-row ${isMe ? 'is-me' : ''}">
       <span class="rank-pos">${pos}</span>
-      <div>
-        <div class="rank-name">${r.name}${isMe ? ' 　（你）' : ''}</div>
+      <div class="rank-info">
+        <div class="rank-name">${r.name}${isMe ? '　（你）' : ''}</div>
         <div class="rank-lv">Lv.${lv.level} ${lv.name}</div>
+        ${achIcons ? `<div class="rank-achs">${achIcons}</div>` : ''}
       </div>
       <span class="rank-streak">${r.streak_current > 0 ? `🔥${r.streak_current}` : ''}</span>
       <span class="rank-xp">${r.xp} XP</span>

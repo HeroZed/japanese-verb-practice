@@ -918,8 +918,34 @@ body.theme-dark .jlpt-N1 { background: #3a0d10; color: #ff8888; }
 }
 .ranking-row.is-me { border-color: var(--red); background: var(--red-pale); }
 .rank-pos  { font-weight: 900; font-size: var(--fz-sm); color: var(--ink-soft); text-align: center; }
+.rank-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rank-name { font-weight: 700; font-size: var(--fz-sm); }
 .rank-lv   { font-size: 0.72em; color: var(--ink-soft); }
+.rank-achs { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.rank-ach-icon {
+  position: relative;
+  font-size: 0.95em;
+  cursor: default;
+  line-height: 1;
+}
+.rank-ach-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 0.68em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+.rank-ach-icon:hover::after { opacity: 1; }
 .rank-xp   { font-size: var(--fz-sm); font-weight: 700; color: var(--red); white-space: nowrap; }
 .rank-streak { font-size: var(--fz-sm); white-space: nowrap; color: #ff8c00; }
 .ranking-loading { color: var(--ink-soft); font-size: var(--fz-sm); text-align: center; padding: 12px; }
